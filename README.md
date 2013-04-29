@@ -5,7 +5,7 @@ A bunch of python2.7 scripts and modules to do some common tasks, very messy
 
 
  
-     Copyright (C) 2003-2012 Institute for Systems Biology
+     Copyright (C) 2003-2013 Institute for Systems Biology
                              Seattle, Washington, USA.
  
      This library is free software; you can redistribute it and/or
