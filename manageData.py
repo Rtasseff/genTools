@@ -1,8 +1,23 @@
 """
 Yet another attempt to quickly and consistently handel the data.
 20121001 RAT
+
+Standard Rat Format
+all files are tsv
+data.dat - matrix of data, rows are features, cols are samples, first row
+	is the sample_ID and first col is the feature_ID, (0,0) = 'NA'
+meta - special file with meta data, platform entry expected
+featureData.dat - info on features, typically one per platform in the platform DB
+sample.Data.dat - info on the samples, kept in same DIR as data
+
 """ 
 import numpy as np
+import pickle
+import csv
+
+
+
+
 
 def load_SerisMatrix(dataPath):
 	"""Simple method to get sample ids, feature ids and 
@@ -97,13 +112,13 @@ def load_platformData(platform,platformPath='',orderCheck=True):
 	featureData,featureMeta = loadDataMetaFiles(platformPath+'/'+platform+'/featureData.dat',platformPath+'/'+platform+'/featureMeta.dat',orderCheck,True)
 	return featureData,featureMeta
 
-def load_exp(dataDir,platformPath='',orderCheck=True):
+def load_exp(dataDir,platformPath='',orderCheck=True,transpose=False):
 	"""Basic load method for typical platform data, like the affy gene chips.
 	Assumes the information is in a rat-standard format, we have
-	a data, meta, sampleData, sampleMeta and featureData file avalible.
-	Currently we assume featureData has a header and no featureMeta is avalible.
-	We also assume standard names and that all data (except for feature data) 
+	a data, meta, sampleData, sampleMeta and featureData featureMeta file avalible.
+	We assume standard names and that all data (except for feature data) 
 	is in a single folder (dataDir).
+	Assumes data is features x samples (else set transpose True).
 	If order check is true we look for feature_ID and sample_ID to compare to the
 	columns and rows of the data matrix.  Ensures order is right.
 	We return
@@ -129,15 +144,16 @@ def load_exp(dataDir,platformPath='',orderCheck=True):
 	sampleData = loadDataMetaFiles(dataDir+'/sampleData.dat',dataDir+'/sampleMeta.dat',orderCheck)
 
 	data = np.loadtxt(dataDir+'/data.dat',dtype=str,delimiter='\t')
+	if transpose: data = data.T
 	
 	if orderCheck:
 		# check the sample order
-		tmp = data[1:,0]
+		tmp = data[0,1:]
 		try:
 			_doOrderCheck(tmp,sampleData['sample_ID'])
 		except ValueError:
 			raise ValueError('Order of the samples in data and sampleData do not match.')
-		tmp = data[0,1:]
+		tmp = data[1:,0]
 		try:
 			_doOrderCheck(tmp,featureData['feature_ID'])
 		except ValueError:
@@ -191,7 +207,11 @@ def loadDataMetaFiles(dataPath,metaPath,orderCheck=True,getMeta=False):
 			elif sampleMeta[i,1]=='int':
 				sampleData[sampleMeta[i,0]] = np.array(sampleDataMatrix[1:,i],dtype=int)
 			elif sampleMeta[i,1]=='str':
-				sampleData[sampleMeta[i,0]] = sampleDataMatrix[1:,i]
+				sampleData[sampleMeta[i,0]] = np.array(sampleDataMatrix[1:,i],dtype=str)
+			elif sampleMeta[i,1]=='bool':	
+				tmp = np.array(sampleDataMatrix[1:,i],dtype=str)
+				sampleData[sampleMeta[i,0]] = np.array(np.ones(len(tmp)),dtype=bool)
+				sampleData[sampleMeta[i,0]][tmp=='False'] = False
 			else:
 				raise ValueError('column '+str(i)+' form data is of unknown datatype: '+sampleMeta[i,1]+', in '+dataPath)
 			if getMeta:
@@ -204,7 +224,11 @@ def loadDataMetaFiles(dataPath,metaPath,orderCheck=True,getMeta=False):
 		elif sampleMeta[1]=='int':
 			sampleData[sampleMeta[0]] = np.array(sampleDataMatrix[1:],dtype=int)
 		elif sampleMeta[1]=='str':
-			sampleData[sampleMeta[0]] = sampleDataMatrix[1:]
+			sampleData[sampleMeta[0]] = np.array(sampleDataMatrix[1:],dtype=str)
+		elif sampleMeta[1]=='bool':
+			tmp = np.array(sampleDataMatrix[1:],dtype=str)
+			sampleData[sampleMeta[0]] = np.array(np.ones(len(tmp)),dtype=bool)
+			sampleData[sampleMeta[0]][tmp=='False'] = False
 		else:
 			raise ValueError('column '+str(i)+' form data is of unknown datatype: '+sampleMeta[1]+', in '+dataPath)
 		if getMeta:
@@ -239,3 +263,90 @@ def loadMetaFile(fileName,metaType='single'):
 		for i in range(n):
 			meta[fin[i,0]]=fin[i,1:]
 	return(meta)
+
+def convert_affyChipAno2SRF(finPath,foutDir,nHeader=22,keepLabels=['Entrez Gene','Ensembl','RefSeq Transcript ID']):
+	"""Simple tool to parse the affy .annot.csv file
+	into the standard ryan format (ie with the 
+	featureData.dat and featureMeta.dat files).
+	Specifiey the labels to add to the feature data,
+	Probe Set ID and Gene Symbol will always be used.
+	"""
+	fin = open(finPath)
+	for i in range(nHeader):
+		line = fin.next()
+		if line[0]!='#':raise ValueError('header not starting with # at line '+str(i))
+
+	line = fin.next()
+	labels = line.strip().split(',')
+	m = len(labels)
+	
+	# find our columns 
+
+	# this is not efficent but I really dont care
+	for i in range(m):
+		labels[i] = _unquote(labels[i])
+		if labels[i]=='Probe Set ID':
+			ind = [i]
+			
+	for i in range(m):
+		if labels[i]=='Gene Symbol':
+			ind.append(i)
+			break
+	for value in keepLabels:
+		for i in range(m):
+			if labels[i]==value:
+				ind.append(i)
+				break
+	# write the meta data for the features
+	fout = open(foutDir+'/featureMeta.dat','w')
+	fout.write('feature_ID\tstr\tAffymetrix unique probset id\ngene_sym\tstr\tGene Symbols from ?')
+	for value in keepLabels:
+		fout.write('\n'+value.replace(' ','_')+'\tstr\t'+value)
+	fout.close()
+
+	# start writing the feature data, first the header
+	fout = open(foutDir+'/featureData.dat','w')
+	fout.write('feature_ID\tgene_sym')
+	for value in keepLabels:
+		fout.write('\t'+value.replace(' ','_'))
+	fout.write('\n')
+	
+
+	for line in fin:
+		#data = line.strip().split(',')
+		data = next(csv.reader([line], skipinitialspace=True))
+		#print data
+		for i in ind:
+			fout.write(_unquote(data[i]).replace(' ','_')+'\t')
+		fout.write('\n')
+
+	fout.close()
+
+
+def _unquote(curString):
+	if curString[0] == '"' and curString[-1]  == '"':
+		curString = curString[1:-1]
+	return(curString)
+
+
+
+
+def featureID2index(featureDir):
+	""" Expecting the SRF featureData.dat file in 
+	the dir above, will use this to create a maping
+	to the feature ids in python dic format saved as 
+	a pickle and called id2index.pkl.
+	"""
+
+
+	id2index = {}
+
+	fin = open(featureDir+'/featureData.dat')
+	line = fin.next()
+	index = 0
+	for line in fin:
+		data = line.rstrip().lstrip().split('\t')
+		id2index[data[0]] = index
+		index = index+1
+
+	pickle.dump(id2index,open(featureDir+'/id2index.pkl','wb'))
