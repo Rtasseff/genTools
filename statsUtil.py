@@ -21,7 +21,7 @@
 # 20120904 RAT
 import numpy as np
 import scipy.stats as stats
-import rpy2.robjects as robjects
+#import rpy2.robjects as robjects
 import scipy.linalg
 import operator as op
 import itertools
