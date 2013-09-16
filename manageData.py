@@ -112,7 +112,7 @@ def load_platformData(platform,platformPath='',orderCheck=True):
 	featureData,featureMeta = loadDataMetaFiles(platformPath+'/'+platform+'/featureData.dat',platformPath+'/'+platform+'/featureMeta.dat',orderCheck,True)
 	return featureData,featureMeta
 
-def load_exp(dataDir,platformPath='',orderCheck=True,transpose=False):
+def load_exp(dataDir,platformPath='',orderCheck=True,transpose=False,featSup = False):
 	"""Basic load method for typical platform data, like the affy gene chips.
 	Assumes the information is in a rat-standard format, we have
 	a data, meta, sampleData, sampleMeta and featureData featureMeta file avalible.
@@ -121,6 +121,10 @@ def load_exp(dataDir,platformPath='',orderCheck=True,transpose=False):
 	Assumes data is features x samples (else set transpose True).
 	If order check is true we look for feature_ID and sample_ID to compare to the
 	columns and rows of the data matrix.  Ensures order is right.
+	Use featSup = True to loads supplimental feature data, this is additional
+	data associated to the features that is exp specific, not platform specific,
+	and so the files are expected to be in dataDir, names = featureData_sup.dat
+	and featureMeta_sup.dat.
 	We return
 	meta dictonary a genral discription of the experiment, some keys are standard but not all
 	data matrix of the primary data
@@ -140,6 +144,10 @@ def load_exp(dataDir,platformPath='',orderCheck=True,transpose=False):
 
 	
 	featureData = loadDataMetaFiles(platformPath+'/'+platform+'/featureData.dat',platformPath+'/'+platform+'/featureMeta.dat',orderCheck)
+	if featSup:
+		featureDataSup = loadDataMetaFiles(dataDir+'/featureData_sup.dat',dataDir+'/featureMeta_sup.dat',orderCheck)
+		for key, value in featureDataSup.iteritems():
+			featureData[key] = value
 	
 	sampleData = loadDataMetaFiles(dataDir+'/sampleData.dat',dataDir+'/sampleMeta.dat',orderCheck)
 
