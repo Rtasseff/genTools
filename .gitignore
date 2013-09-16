@@ -1,3 +1,6 @@
+#vi stuff
+*.swp
+
 *.py[cod]
 
 # C extensions
