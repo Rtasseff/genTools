@@ -358,3 +358,5 @@ def featureID2index(featureDir):
 		index = index+1
 
 	pickle.dump(id2index,open(featureDir+'/id2index.pkl','wb'))
+
+

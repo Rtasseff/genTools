@@ -3,6 +3,29 @@ genTools
 
 A bunch of python2.7 scripts and modules to do some common tasks, very messy
 
+modules
+-------------------
+The most valuable:
+statsUtil, contains some of my commonly used statistic tools.
+stand alone other than:
+import numpy as np
+import scipy.stats as stats
+import scipy.linalg
+import operator as op
+import itertools
+
+dataUtil, some occasionally valuable data operations 
+stand alone other than:
+import numpy as np 
+from operator import itemgetter
+
+manageData, useful for microarray data, but its customized more my
+own purpose and not well documented or commented.
+
+cvTools, was valuable for me, but I then found that most
+of this can be implemented easier by scipy and numpy built 
+in functions.
+
 
 license
 -------------------

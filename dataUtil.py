@@ -15,15 +15,20 @@ def aveUnqTime(time,X,method='mean'):
 	n = len(timeUnq)
 	
 	XUnq = np.zeros(X.shape)
+	err = np.zeros(X.shape)
 	for i in range(n):
-		if method == 'mean': XUnq[i] = np.mean(X[time==timeUnq[i]],0)
-		elif method == 'median': XUnq[i] = np.median(X[time==timeUnq[i]],0)
+		if method == 'mean': 
+			XUnq[i] = np.mean(X[time==timeUnq[i]],0)
+			err[i] = np.sqrt(np.var(X[time==timeUnq[i]],0))
+		elif method == 'median': 
+			XUnq[i] = np.median(X[time==timeUnq[i]],0)
+			err[i] = np.sqrt(np.var(X[time==timeUnq[i]],0))
 		else: print 'wrong method type'
 
 	# sort them 
 	ind = np.argsort(timeUnq)
 		
-	return timeUnq[ind], XUnq[ind]
+	return timeUnq[ind], XUnq[ind], err[ind]
 
 def interpMissing(t1,t2,x1,x2):
 	"""find the missing observations, 
@@ -196,4 +201,20 @@ def FD(x,t,method='back'):
 	
 	return(dxdt,t)
 
+def rankAgg(X,w=[]):
+	"""A simple rank aggrigation method.
+	This is similar to Broda and modified to
+	have geometrically decreasing weights.
+	Additional weight terms can be included.
+	X has n features which will be ranked over m tests
+	We note that high positive numbers rank high.
+	"""
+	n,m = X.shape
+	if len(w) ==0:
+		w = np.ones(m)
 
+	ranks = np.argsort(np.argsort(-1*X,0),0)
+	scores = np.sum((1/(ranks+1.))*w,1)
+	return(scores)
+
+		

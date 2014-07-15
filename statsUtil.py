@@ -28,9 +28,9 @@ import itertools
 
 def iqr(x):
 	"""returns the inter quantile distance for
-	the varriables in x.  
-	if x is a matrix we assum the columns are
-	difrent distributions and the iqr returned
+	the variables in x.  
+	if x is a matrix we assume the columns are
+	different distributions and the iqr returned
 	will be a vector corrisponding to the columns of x.
 	"""
 	n = len(x)
@@ -49,7 +49,7 @@ def iqr(x):
 
 	return(q3-q1)
 
-def fdr_bh(p,alpha=.05):
+def fdr_bh(p_full,alpha=.05):
 	"""Performs the Benjamini & Hochberg 1995
 	multiple test correction for controlling
 	the false discovery rate in familywise 
@@ -61,6 +61,14 @@ def fdr_bh(p,alpha=.05):
 	returus	p_adj, adjusted pvalues, 1d np array
 	returns	pCrit, the critial p-value cut off
 	"""
+	n_full = len(p_full)
+	isNAN = np.isnan(p_full)
+	if np.any(isNAN):
+		print 'nan found, will be ignored'	
+		p = p_full[~isNAN]
+	else:
+		p = p_full
+
 	m = len(p)
 	sortInd = np.argsort(p)
 	pSort = p[sortInd]
@@ -83,7 +91,12 @@ def fdr_bh(p,alpha=.05):
 
 	h = p<=pCrit
 	
-	return h,pAdjUnsort,pCrit
+	h_full = np.zeros(n_full)
+	pAdjUnsort_full = np.zeros(n_full)+np.nan
+	h_full[~isNAN] = h
+	pAdjUnsort_full[~isNAN] = pAdjUnsort
+
+	return h_full,pAdjUnsort_full,pCrit
 
 def fisherComb(p):
 	"""Apply fisher method to combine 
@@ -187,8 +200,8 @@ def cmds(D):
 
 
 def makeDesingMat(y):
-	"""transfomr a class label vector into the designe / indicator matrix Y
-	y	class vector corrisponding to observations
+	"""transfomr a class label vector into the design / indicator matrix Y
+	y	class vector corresponding to observations
 	return	matrix with observations on rows and
 		classes on cols, with 1 indicating obs in class 
 	"""
@@ -197,17 +210,70 @@ def makeDesingMat(y):
 	return(np.eye(len(np.unique(y)))[y,:])
 
 
+def makeConTable(x,y):
+	"""Given two lists of categorical/binary observations
+	(which can be strings, but nan will be treated as missing)
+	we generate a 2-D contingency table.
+	Here we assume that x and y are ordered the same such that 
+	element x[i] and y[i] represent the same observation/sample.
+	"""
+	n = len(x)
+	if n!=len(y):
+		raise ValueError('the two data vectors must be the same length')
+
+	xInt, xCat = cat2int(x)
+	yInt, yCat = cat2int(y)
+	xN = len(xCat)
+	yN = len(yCat)
+
+	conTable = np.zeros((xN,yN))
+
+	for i in range(n):
+		if not np.isnan(xInt[i]) and not np.isnan(yInt[i]):
+			conTable[xInt[i],yInt[i]]+=1
+
+	return(conTable,xCat,yCat)
+	
+
+def getGroups(values,labels):
+	"""assuming the labels correspond to the values 
+	we return an np array of values for each label in
+	a list of np arrays.
+	Assumes values and labels are np arrays for easy indexing.
+	"""
+	unique = list(set(labels))
+	groups = []
+	for label in unique:
+		groups.append(values[labels==label])
+
+	return(groups,unique)
+
+
 def cat2int(y):
-	"""change a set of str catigory lables with n
-	unique values into an int vector with unique 
+	"""change a set of str category labels with n
+	unique values into an int array with unique 
 	values of numbers from 0 to n-1
-	returns the new int vector
-		a list of catigories corrisponding to int value
+	returns the new int array and list of cat labels.
+		a list of categories corresponding to int value
+	nan values (either 'nan' or the np object) will be preserved.
+	input array y must be an np array for indexing reasons.
 	"""
 	unique = list(set(y))
 	yNew = np.array(np.zeros(len(y)),dtype=int)
+	count = 0
 	for i in range(len(unique)):
-		yNew[y==unique[i]]=i
+		tmp = unique[i]
+		missing=False
+		if type(tmp)==np.string_:
+			if tmp=='nan':missing=True
+		else: 
+			if np.isnan(tmp): missing=True
+
+		if missing==False:
+			yNew[y==unique[i]] = count
+			count += 1
+		else:
+			yNew[y==unique[i]] = np.nan
 
 	return(yNew,unique)
 
@@ -229,6 +295,18 @@ def enrich(n_pos,n_draw,total_pos,total_all):
 	"""
 	
 	p = stats.hypergeom.sf(n_pos-1,total_all,total_pos,n_draw)
+	return(p)
+
+def enrichList(posList,drawList,backList):
+	"""Standard enrichment test usign hypergeometric 
+	distribution.
+	"""
+	total_all = len(set(backList))
+	total_pos = len(set(posList))
+	n_draw = len(set(drawList))
+	n_pos = len(set(posList).intersection(set(drawList)))
+	p = enrich(n_pos,n_draw,total_pos,total_all)
+	
 	return(p)
 
 
@@ -421,4 +499,112 @@ def chooseAllComb(V,k):
 	blows up fast so be careful
 	"""
 	return(np.array(list(itertools.combinations(V,k))))
+
+def runPairwise(x,y,xType, yType, obsMinWarn=5, obsMinError=1):
+	"""Simple function to run a standard pairwise
+	test on features of potentially different types
+	to identify univariate statistical relationships between x and y.
+	We have implemented robust methods when standard,
+	well excepted, easy to implement options are available.
+	x and y are np arrays of the same size (int float and str allowed,
+	where str 'nan' or np.nan is used for missing data.
+	xType and yType holds a upper case string indicating type
+	N,C or B for numerical (ordered) categorical or binary.
+	Tests are determined based on the features being compared:
+	N-N = Spearman rank, B-B = Fisher Exact, C-C = ChiSq,
+	N-B = Ranks Sum, N-C = Kruskal Wallis.
+	The test also determines what is reported in r (correlation, effect size, separability), 
+	which, like p, is symmetric.
+	N-N = spearman rho correlation coefficient (bounded by -1,1),
+	B-B = phi coefficient which is the person coefficient analogue 
+	C-C = cramer's V (generalization of phi), which is related to correlation for the chi sq test.
+	N-C = as Kruskal Wallis has no simple single metric for effect size,
+	we will use a measure of separability similar to multiclass LDA
+	sqrt(variance of class means / variance of samples) (note this is nonrobust)
+	which ranges from zero with no separability to 1
+	N-B = effect size determined by z/sqrt(N), which is related to t-test correlation coeff,
+
+
+
+
+	"""
+	n = len(x)
+	if n!=len(y): raise ValueError('x and y must be same size')
+
+	obsMinWarnFlag=False
+	obsMinErrorFlag=False
+
+	if xType=='N' and yType=='N':
+		# numerical - numerical, Spearman Rank
+		r,p = stats.spearmanr(np.array(data[i],dtype=float),data[j])
+
+	elif ((xType=='N' and (yType=='C' or yType=='B')) or ((xType=='C' or xType=='B') and yType=='N')):
+		# numerical - categorical/binary, Kruskal Wallis
+		# find groups:
+		cat = False 
+		if xType=='N':
+			values = x
+			labels = y
+			if yType=='C':cat=True
+		else:
+			values = y
+			labels = x
+			if xType=='C':cat=True
+
+		groups,_ = getGroups(values,labels)
+		m = len(groups)
+		for i in range(m):
+			if len(groups[i])<obsMinWarn:obsMinWarnFlag==True
+			if len(groups[i])<obsMinError:obsMinErrorFlag==True
+
+		if obsMinErrorFlag==True:
+			p = np.nan
+			r = np.nan
+		elif cat==True:
+			# numerical - categorical, Kruskal Wallis
+			h,p = stats.mstats.kruskalwallis(*groups)
+			# calculate our ad hoc effect size
+			classMeans = np.array([])
+			for i in range(m):
+				classMeans = np.append(classMeans,np.mean(groups[i]))
+			r = np.sqrt(np.var(classMeans)/np.var(values))
+		else:
+			# numerical - binary, Rank Sum
+			p,z = rankSum(groups[0],groups[1])
+			r = z / np.sqrt(len(values))
+
+		 
+
+	elif (xType=='C' or xType=='B') and (yType=='C' or yType=='B'):
+		# categorical variables
+		conTable, xCat, yCat = makeConTable(x,y)
+		# check table for limits on observation counts
+		for i in range(len(xCat)):
+			for j in range(len(yCat)):
+				if conTable[i,j]<obsMinError:obsMinErrorFlag==True
+				if conTable[i,j]<obsMinWarn:obsMinWarnFlag==True
+
+		if xType=='B' and yType=='B':
+			# special case of binary - binary, Fisher exact:
+			odds,p = stats.fisher_exact(conTable)
+			#r = np.log10(odds) no longer reporting odds ratio
+			chi,_,_,_ = stats.chi2_contingency(conTable)
+			r = np.sqrt(chi/n)
+		else:
+			# chi squared test
+			chi,p,_,_ = stats.chi2_contingency(conTable)
+			rows,cols = conTable.shape
+			nMin = min([rows,cols])
+			r = np.sqrt((chi/n)/(nMin-1))
+
+
+
+
+	else:
+		raise ValueError('prefix on labels is incorrect')
+
+	return(r,p,obsMinErrorFlag)
+
+	
+	
 	
