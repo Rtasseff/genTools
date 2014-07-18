@@ -64,7 +64,7 @@ def fdr_bh(p_full,alpha=.05):
 	n_full = len(p_full)
 	isNAN = np.isnan(p_full)
 	if np.any(isNAN):
-		print 'nan found, will be ignored'	
+		#print 'nan found, will be ignored'	
 		p = p_full[~isNAN]
 	else:
 		p = p_full
@@ -265,7 +265,7 @@ def cat2int(y):
 		tmp = unique[i]
 		missing=False
 		if type(tmp)==np.string_:
-			if tmp=='nan':missing=True
+			if tmp.lower()=='nan':missing=True
 		else: 
 			if np.isnan(tmp): missing=True
 
@@ -507,7 +507,7 @@ def runPairwise(x,y,xType, yType, obsMinWarn=5, obsMinError=1):
 	We have implemented robust methods when standard,
 	well excepted, easy to implement options are available.
 	x and y are np arrays of the same size (int float and str allowed,
-	where str 'nan' or np.nan is used for missing data.
+	where str 'nan' and 'NAN' or other types np.nan is used for missing data.
 	xType and yType holds a upper case string indicating type
 	N,C or B for numerical (ordered) categorical or binary.
 	Tests are determined based on the features being compared:
@@ -536,17 +536,22 @@ def runPairwise(x,y,xType, yType, obsMinWarn=5, obsMinError=1):
 
 	if xType=='N' and yType=='N':
 		# numerical - numerical, Spearman Rank
-		r,p = stats.spearmanr(np.array(data[i],dtype=float),data[j])
+		# if its a string array, need to convert to float:
+		if type(x[0])==np.string_:x = np.array(x,dtype=float)
+		if type(y[0])==np.string_:y = np.array(y,dtype=float)
+		r,p = stats.spearmanr(x,y)
 
 	elif ((xType=='N' and (yType=='C' or yType=='B')) or ((xType=='C' or xType=='B') and yType=='N')):
 		# numerical - categorical/binary, Kruskal Wallis
 		# find groups:
 		cat = False 
 		if xType=='N':
+			if type(x[0])==np.string_:x = np.array(x,dtype=float)
 			values = x
 			labels = y
 			if yType=='C':cat=True
 		else:
+			if type(y[0])==np.string_:y = np.array(y,dtype=float)
 			values = y
 			labels = x
 			if xType=='C':cat=True
