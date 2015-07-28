@@ -1,23 +1,23 @@
 #!/usr/bin/env python
 #
-# 
+#
 #     Copyright (C) 2003-2012 Institute for Systems Biology
 #                             Seattle, Washington, USA.
-# 
+#
 #     This library is free software; you can redistribute it and/or
 #     modify it under the terms of the GNU Lesser General Public
 #     License as published by the Free Software Foundation; either
 #     version 2.1 of the License, or (at your option) any later version.
-# 
+#
 #     This library is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 #     Lesser General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU Lesser General Public
 #     License along with this library; if not, write to the Free Software
 #     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
-# 
+#
 # 20120904 RAT
 import numpy as np
 import scipy.stats as stats
@@ -32,7 +32,7 @@ nanValues = ['NA','NaN','na','nan']
 
 def iqr(x):
 	"""returns the inter quantile distance for
-	the variables in x.  
+	the variables in x.
 	if x is a matrix we assume the columns are
 	different distributions and the iqr returned
 	will be a vector corrisponding to the columns of x.
@@ -56,8 +56,8 @@ def iqr(x):
 def fdr_bh(p_full,alpha=.05):
 	"""Performs the Benjamini & Hochberg 1995
 	multiple test correction for controlling
-	the false discovery rate in familywise 
-	analysis.  Tests must be independent or 
+	the false discovery rate in familywise
+	analysis.  Tests must be independent or
 	positivly corrilated.
 	p	original pvalues, np 1d array
 	alpha 	threshold FDR, scalar float
@@ -68,7 +68,7 @@ def fdr_bh(p_full,alpha=.05):
 	n_full = len(p_full)
 	isNAN = np.isnan(p_full)
 	if np.any(isNAN):
-		#print 'nan found, will be ignored'	
+		#print 'nan found, will be ignored'
 		p = p_full[~isNAN]
 	else:
 		p = p_full
@@ -94,7 +94,7 @@ def fdr_bh(p_full,alpha=.05):
 		pCrit = pSort[maxInd]
 
 	h = p<=pCrit
-	
+
 	h_full = np.zeros(n_full)
 	pAdjUnsort_full = np.zeros(n_full)+np.nan
 	h_full[~isNAN] = h
@@ -103,7 +103,7 @@ def fdr_bh(p_full,alpha=.05):
 	return h_full,pAdjUnsort_full,pCrit
 
 def fisherComb(p):
-	"""Apply fisher method to combine 
+	"""Apply fisher method to combine
 	the pvaules in the np array p, to
 	get a single pvalue and return"""
 	n = len(p)
@@ -113,7 +113,7 @@ def fisherComb(p):
 
 
 def mi(bins,calcP=False,v=False):
-	"""calculates mutual information 
+	"""calculates mutual information
 	\sum_i\sum_j p(i,j)*log_2[p(i,j)/(p(i)*p(j))]
 	for 2 variable histogram defined by bins
 	bins	int 2d np array
@@ -149,12 +149,12 @@ def mi(bins,calcP=False,v=False):
 
 def sampleIndexWR(n):
 	"""Given an array size, n, returns
-	the indicies for random uniform sampling 
+	the indicies for random uniform sampling
 	of the array, with replacment.
 	"""
 	indFloat = sampleWR(range(n),n)
 	ind = map(int,indFloat)
-	return(ind)	
+	return(ind)
 
 def sampleWR(pop,k=0):
 	"""given a population, pop,
@@ -174,7 +174,7 @@ def cmds(D):
 	"""Preform clasical multidimensional scaling.
 	using D as the pair-wsie distances Matrix
 	returns Y the column matrix defining the
-	new corrdinates that retain maximum conserved 
+	new corrdinates that retain maximum conserved
 	distance and E the eigan values that describe
 	the contribution of each dimension (Y col).
 	"""
@@ -195,7 +195,7 @@ def cmds(D):
 	ind = np.argsort(E)[::-1]
 	E = E[ind]
 	V = V[:,ind]
-	# lets now create our return matrix 
+	# lets now create our return matrix
 	if np.sum(E>eps)==0:
 		Y = 0
 	else:
@@ -207,7 +207,7 @@ def makeDesingMat(y):
 	"""transfomr a class label vector into the design / indicator matrix Y
 	y	class vector corresponding to observations
 	return	matrix with observations on rows and
-		classes on cols, with 1 indicating obs in class 
+		classes on cols, with 1 indicating obs in class
 	"""
 	if np.sum(np.unique(y) != np.array(range(len(np.unique(y)))))>0:
 		raise ValueError('Class vector y must be a numeric vector, with values as 0,1,2,...')
@@ -218,7 +218,7 @@ def makeConTable(x,y):
 	"""Given two lists of categorical/binary observations
 	(which can be strings, but nan will be treated as missing)
 	we generate a 2-D contingency table.
-	Here we assume that x and y are ordered the same such that 
+	Here we assume that x and y are ordered the same such that
 	element x[i] and y[i] represent the same observation/sample.
 	"""
 	n = len(x)
@@ -239,7 +239,7 @@ def makeConTable(x,y):
 	return(conTable,xCat,yCat)
 
 def getGroups(values,labels):
-	"""assuming the labels correspond to the values 
+	"""assuming the labels correspond to the values
 	we return an np array of values for each label in
 	a list of np arrays.
 	Assumes values and labels are np arrays for easy indexing.
@@ -257,7 +257,7 @@ def getGroups(values,labels):
 
 def cat2int(y):
 	"""change a set of str category labels with n
-	unique values into an int array with unique 
+	unique values into an int array with unique
 	values of numbers from 0 to n-1
 	returns the new int array and list of cat labels.
 		a list of categories corresponding to int value
@@ -277,7 +277,7 @@ def cat2int(y):
 		if type(tmp)==np.string_:
 			if tmp in nanValues:missing=True
 			yNew[y==unique[i]] = -1
-		else: 
+		else:
 			if np.isnan(tmp): missing=True
 			yNew[np.isnan(y)] = -1
 
@@ -285,12 +285,12 @@ def cat2int(y):
 			yNew[y==unique[i]] = count
 			count += 1
 			cats.append(unique[i])
-			
+
 
 	return(yNew,cats)
 
 def softThresh(X,thresh):
-	"""Take X, and do soft 
+	"""Take X, and do soft
 	threshold on it and return that.
 	"""
 	tmp = np.abs(X) - thresh
@@ -298,19 +298,19 @@ def softThresh(X,thresh):
 	return(tmp*np.sign(X))
 
 def enrich(n_pos,n_draw,total_pos,total_all):
-	"""Standard enrichment test usign hypergeometric 
+	"""Standard enrichment test usign hypergeometric
 	distribution.
 	ie I got n_pos red balls out of n_draw draws from
-	a bag with total_pos red balls and total all balls of 
+	a bag with total_pos red balls and total all balls of
 	any color, calculate the probability of drawing n_pos
 	red balls at random.
 	"""
-	
+
 	p = stats.hypergeom.sf(n_pos-1,total_all,total_pos,n_draw)
 	return(p)
 
 def enrichList(posList,drawList,backList):
-	"""Standard enrichment test usign hypergeometric 
+	"""Standard enrichment test usign hypergeometric
 	distribution.
 	"""
 	total_all = len(set(backList))
@@ -318,34 +318,34 @@ def enrichList(posList,drawList,backList):
 	n_draw = len(set(drawList))
 	n_pos = len(set(posList).intersection(set(drawList)))
 	p = enrich(n_pos,n_draw,total_pos,total_all)
-	
+
 	return(p)
 
 
 def rankSum(x,y,forceExact=False):
 	"""This is a two-sided Wilcoxon rank sum test,
-	robust and nonparametric way to estimate if 
+	robust and nonparametric way to estimate if
 	two samples x and y have diffrent medians.
-	Test assumes that two samples x,y are independent but 
-	from distributions with the same median.  
-	This is tested agains the alternate hyp that 
-	the two samples are indipendent but come from 
+	Test assumes that two samples x,y are independent but
+	from distributions with the same median.
+	This is tested agains the alternate hyp that
+	the two samples are indipendent but come from
 	distributions with diffrent medians.
 	Identical to Mann-Whitney U test.
 	By defult the normal approximation is
-	made for the test statistic IF the 
+	made for the test statistic IF the
 	sum of the samples has 15 or more obs;
 	ortherwise, we enumerate the combinations
 	to find the exact p-value.
 	If forceExact==True then the exact p-value
 	is calculated regardless of sample size.
-	returns 
+	returns
 	p-value - sacalr
 	z, approximate test statistic - scalar
 
 	This function is similar to matlab ranksum.
 	"""
-	# find smallest 
+	# find smallest
 	xLen = len(x)
 	yLen = len(y)
 	if xLen<=yLen:
@@ -356,8 +356,8 @@ def rankSum(x,y,forceExact=False):
 		n = xLen
 		sampSm = x
 		sampLrg = y
-	
-	
+
+
 	sampComb = np.append(sampSm,sampLrg)
 	# check for no varriation
 	if np.var(sampComb) == 0: return(np.nan,np.nan)
@@ -374,7 +374,7 @@ def rankSum(x,y,forceExact=False):
 	wC = w-wMean
 	z = (wC - .5 * np.sign(wC))/np.sqrt(wVar)
 
-	# more complex methods exist, but I am using this 
+	# more complex methods exist, but I am using this
 	# simple way to deal with small samples
 	if forceExact or (xLen+yLen)<15:
 		allComb = chooseAllComb(ranks,n)
@@ -382,42 +382,42 @@ def rankSum(x,y,forceExact=False):
 		allCombLen = len(allCombSum)
 		plo = np.sum(allCombSum<=w)/float(allCombLen)
 		phi = np.sum(allCombSum>=w)/float(allCombLen)
-		p = np.min([plo,phi]) 
+		p = np.min([plo,phi])
 		p = np.min([2*p,1])
 	else:
 		p = 2 * stats.norm.cdf(-np.abs(z))
 
-	
-		
+
+
 	return(p,z)
 
 def rankSum1S(x,y,forceExact=False):
 	"""This is a one-sided Wilcoxon rank sum test,
-	robust and nonparametric way to estimate if 
+	robust and nonparametric way to estimate if
 	the median of sample x > y.
-	Test assumes that x,y are independent.  
-	This is tested aginst the alternate hyp that 
-	the two samples are indipendent but come from 
+	Test assumes that x,y are independent.
+	This is tested aginst the alternate hyp that
+	the two samples are indipendent but come from
 	distributions with the same medians.
 	Identical to a one-sided Mann-Whitney U test.
 	By defult the normal approximation is
-	made for the test statistic IF the 
+	made for the test statistic IF the
 	sum of the samples has 15 or more obs;
 	ortherwise, we enumerate the combinations
 	to find the exact p-value.
 	If forceExact==True then the exact p-value
 	is calculated regardless of sample size.
-	returns 
+	returns
 	p-value - sacalr
 	z, approximate test statistic - scalar
 
 	This function is similar to matlab ranksum.
 	"""
-	# find smallest 
+	# find smallest
 	xLen = len(x)
 	yLen = len(y)
 	n = xLen
-	
+
 	sampComb = np.append(x,y)
 	# check for no varriation
 	if np.var(sampComb) == 0: return(np.nan,np.nan)
@@ -434,7 +434,7 @@ def rankSum1S(x,y,forceExact=False):
 	wC = w-wMean
 	z = (wC - .5 * np.sign(wC))/np.sqrt(wVar)
 
-	# more complex methods exist, but I am using this 
+	# more complex methods exist, but I am using this
 	# simple way to deal with small samples
 	if forceExact or (xLen+yLen)<15:
 		allComb = chooseAllComb(ranks,n)
@@ -444,33 +444,33 @@ def rankSum1S(x,y,forceExact=False):
 	else:
 		p = stats.norm.cdf(-z)
 
-	
-		
+
+
 	return(p,z)
 
 
 def tiedRank(x):
-	"""Calculates ranks for vector x while considering 
+	"""Calculates ranks for vector x while considering
 	ties.  If values are the same then the rank assigned
 	is the average of the ranks they would span.
 	Also returns the tie adjustment used in some tests.
 	"""
 	n = len(x)
-	# sor the values 
+	# sor the values
 	ind = np.argsort(x)
 	xSort = x[ind]
 	# get the nan values, at the end
 	nNan = np.sum(np.isnan(x))
 	xLen = n-nNan
-	
-		
+
+
 	# find all ties
-	tie = xSort[:xLen-1] == xSort[1:xLen]	
+	tie = xSort[:xLen-1] == xSort[1:xLen]
 	tieInd = np.arange(xLen-1)[tie]
 	tieInd = np.append(tieInd,xLen+2)
 	nTies = len(tieInd)
 
-	rankTmp = np.arange(float(n)) # the nan does not seem to work with ints 
+	rankTmp = np.arange(float(n)) # the nan does not seem to work with ints
 	rankTmp[xLen:] = np.nan
 	tieAdj = 0
 	count = 0
@@ -481,9 +481,9 @@ def tiedRank(x):
 		while tieInd[count+1] == tieInd[count]+1:
 			count = count + 1
 			nTied = nTied + 1
-			
+
 		tieAdj = tieAdj + nTied*(nTied-1)*(nTied+1)/2.
-		# compute average 
+		# compute average
 		rankTmp[tieStart:tieStart+nTied] = np.sum(rankTmp[tieStart:tieStart+nTied])/nTied
 		count = count+1
 
@@ -492,12 +492,14 @@ def tiedRank(x):
 	rank[ind] = rankTmp
 	return(rank,tieAdj)
 
-	
+def mad(x):
+    """Calculate the meadian absolute deviation"""
+    return(np.median(np.abs(np.median(x)-x)))
 
 def nck(n, k):
 	"""Calculate n choose k
-	N!/K!(N-K)!.  No warning for 
-	large numbers that will take 
+	N!/K!(N-K)!.  No warning for
+	large numbers that will take
 	forever!"""
 	k = min(k, n-k)
 	if k == 0: return 1
@@ -506,7 +508,7 @@ def nck(n, k):
 	return numer//denom
 
 def chooseAllComb(V,k):
-	"""choose all possible combinations of 
+	"""choose all possible combinations of
 	k items from the vector V
 	blows up fast so be careful
 	"""
@@ -525,10 +527,10 @@ def runPairwise(x,y,xType, yType, obsMinWarn=5, obsMinError=1):
 	Tests are determined based on the features being compared:
 	N-N = Spearman rank, B-B = Fisher Exact, C-C = ChiSq,
 	N-B = Ranks Sum, N-C = Kruskal Wallis.
-	The test also determines what is reported in r (correlation, effect size, separability), 
+	The test also determines what is reported in r (correlation, effect size, separability),
 	which, like p, is symmetric.
 	N-N = spearman rho correlation coefficient (bounded by -1,1),
-	B-B = phi coefficient which is the person coefficient analogue 
+	B-B = phi coefficient which is the person coefficient analogue
 	C-C = cramer's V (generalization of phi), which is related to correlation for the chi sq test.
 	N-C = as Kruskal Wallis has no simple single metric for effect size,
 	we will use a measure of separability similar to multiclass LDA
@@ -556,7 +558,7 @@ def runPairwise(x,y,xType, yType, obsMinWarn=5, obsMinError=1):
 	elif ((xType=='N' and (yType=='C' or yType=='B')) or ((xType=='C' or xType=='B') and yType=='N')):
 		# numerical - categorical/binary, Kruskal Wallis
 		# find groups:
-		cat = False 
+		cat = False
 		if xType=='N':
 			if type(x[0])==np.string_:x = np.array(x,dtype=float)
 			values = x
@@ -590,7 +592,7 @@ def runPairwise(x,y,xType, yType, obsMinWarn=5, obsMinError=1):
 			p,z = rankSum(groups[0],groups[1])
 			r = z / np.sqrt(len(values))
 
-		 
+
 
 	elif (xType=='C' or xType=='B') and (yType=='C' or yType=='B'):
 		# categorical variables
@@ -638,20 +640,20 @@ def qqPlot(pValues,outpath):
 	plt.close()
 
 
-	
-	
+
+
 def plotPairwise(x,y,varType=['',''],varName=['',''],outfile=''):
 	"""Diffrent combinations of variable types
 	are visulized by diffrent plots, this funciton
 	uses a basic visulization for the correct combinaiton.
-	x	np str array, if type = N then this should be 
+	x	np str array, if type = N then this should be
 		convertable to float array
 	y	same as x but for other variable
-	varType	list with 2 values to indicate type of x and y 
-		if left blank we assume x and y are split lines form a 
+	varType	list with 2 values to indicate type of x and y
+		if left blank we assume x and y are split lines form a
 		feature matrix and the first entry is the label
 	varName list with 2 values to indicate name of x and y
-		if this *and* varType above is blank this will be taken as the 
+		if this *and* varType above is blank this will be taken as the
 		label (first entry) of x and y.
 
 	"""
@@ -672,7 +674,7 @@ def plotPairwise(x,y,varType=['',''],varName=['',''],outfile=''):
 	if varType[0] == 'B': varType[0] = 'C' # no diff here
 	if varType[1] == 'B': varType[1] = 'C' # no diff here
 
-	
+
 	# check if both numerical:
 	if varType[0]=='N' and varType[1]=='N':
 		xFloat = _getFloat(x)
@@ -698,14 +700,14 @@ def plotPairwise(x,y,varType=['',''],varName=['',''],outfile=''):
 
 		except ValueError as ve:
 			warnings.warn("Could not fit line for "+varName[0]+" vs "+varName[1]+": "+str(ve),UserWarning)
-		
-		
-		
+
+
+
 		plt.xlabel(varName[0]+' ranks')
 		plt.ylabel(varName[1]+' ranks')
 		#plt.ylabel(varName[1].split(':')[-1])
 	elif varType[0]=='C' and varType[1]=='C':
-		# right now we are just going with a simple 
+		# right now we are just going with a simple
 		# stacked bar plots, more advanced things
 		# like mosics are avalible in R or pythons statsmodels
 
@@ -736,14 +738,14 @@ def plotPairwise(x,y,varType=['',''],varName=['',''],outfile=''):
 		plt.xlabel(varName[abs(varInd-1)])
 		plt.xticks(ind,np.array(yCat,dtype=str),rotation=10)
 		plt.legend()
-			
+
 
 
 	else:
 		#####
 		#fig = plt.figure(figsize=(8,3))
 
-		# number vs category 
+		# number vs category
 		#set up variables
 		if varType[0]=='N':
 			varN = _getFloat(x)
@@ -762,7 +764,7 @@ def plotPairwise(x,y,varType=['',''],varName=['',''],outfile=''):
 		plt.xlabel(varName[varCInd])
 		plt.ylabel(varName[varNInd])
 		#plt.ylabel(varName[varNInd].split(':')[-1])
-	
+
 	if outfile=='':
 		plt.show()
 	else:
@@ -783,4 +785,4 @@ def _getFloat(x):
 				xFloat[i] = 'nan'
 		xFloat = np.array(xFloat,dtype=float)
 	return xFloat
-		
+
