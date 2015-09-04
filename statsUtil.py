@@ -492,9 +492,13 @@ def tiedRank(x):
 	rank[ind] = rankTmp
 	return(rank,tieAdj)
 
-def mad(x):
-    """Calculate the meadian absolute deviation"""
-    return(np.median(np.abs(np.median(x)-x)))
+def mad(x,method='median'):
+    """Calculate the meadian/mean absolute deviation"""
+    tmp = np.abs(np.median(x)-x)
+    if method=='median':
+        return(np.median(tmp))
+    elif method=='mean':
+        return(np.mean(tmp))
 
 def nck(n, k):
 	"""Calculate n choose k
